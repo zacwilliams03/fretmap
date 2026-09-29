@@ -120,7 +120,10 @@ export function mountFretboard(el, actions) {
 
     el.replaceChildren(tuners, root);
     if (focusedTuner) {
-      const again = tuners.querySelector(`[data-tuner="${focusedTuner}"]`);
+      // At a range limit the focused button is now disabled; fall back to its partner.
+      const [string, dir] = focusedTuner.split(':');
+      const again = tuners.querySelector(`[data-tuner="${focusedTuner}"]:not(:disabled)`) ||
+        tuners.querySelector(`[data-tuner="${string}:${dir === 'up' ? 'down' : 'up'}"]`);
       if (again) again.focus();
     }
   }

@@ -60,7 +60,10 @@ export function mountToolbar(el, actions) {
     tuningSelect.focus();
   });
   saveName.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') saveForm.hidden = true;
+    if (e.key === 'Escape') {
+      saveForm.hidden = true;
+      tuningSelect.focus();
+    }
   });
 
   // Two-step delete: the first click arms the button, a second click within 3s deletes.
