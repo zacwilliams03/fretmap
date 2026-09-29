@@ -148,24 +148,27 @@ no more muted middle strings, and no thumb unless B has one too). So `x3201x` go
 - **Chord box:** an SVG with 6 vertical strings (string 6 on the left) and 4 fret rows.
   - The top line is drawn thick when the window starts at the capo or nut, and `nfr` is labelled
     otherwise. `n` is relative to the capo.
-  - `o` marks open strings and `✕` marks muted ones.
+  - A hollow circle marks open strings and `✕` marks muted ones.
   - Dots use the role colours. Their label is the interval in Names mode or the key degree in
     Numbers mode.
   - A barre is drawn as a rounded bar. A thumb note gets a small `T`.
 - The 3 description lines go under each box.
 - **Empty:** *"No playable shapes within frets {capo}–{frets}. Try more frets (⚙) or a simpler
   chord."*
-- The gallery re-renders only when the chord, tuning, capo, frets, labels or key change.
+- The shape list is recomputed only when the chord, tuning, capo or frets change. The boxes are
+  redrawn only when that list, the labels or the key change. Selecting a shape just updates
+  `aria-pressed` on the existing boxes.
 
 **Selection:**
 - Each box is a `<button>` with `aria-pressed`. Clicking it, or Enter/Space, selects it, and the
-  same action on the selected box clears it. **Esc** anywhere clears it (ignored while focus is in the
-  chord search, where Esc already restores the chord).
+  same action on the selected box clears it. **Esc** clears it, except while focus is in the chord
+  search or a form field (they use Esc themselves). After **Show all**, focus moves to the
+  first newly shown box.
 - Changing the chord, tuning, capo or fret count clears the selection. Changing labels or key
   keeps it.
 
 **Neck highlight (`fretboard.js`, only when a highlight is passed):**
-- Cells belonging to the shape keep their dot and gain a ring (2px, `var(--text)`), drawn like
+- Cells belonging to the shape keep their dot and gain a ring (2.5px, `var(--text)`), drawn like
   the slash-bass ring but outside it if both apply.
 - All other chord-tone dots and faint labels drop to 25% opacity.
 - A muted string shows `✕` in the open-string column instead of whatever was there.
