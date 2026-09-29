@@ -7,5 +7,6 @@ import './chords.test.mjs';
 import './parse.test.mjs';
 import './catalog.test.mjs';
 import './degrees.test.mjs';
+import './map.test.mjs';
 
 report();
