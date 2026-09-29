@@ -81,7 +81,8 @@ export function createFavouriteStore(storage) {
   return {
     list: () => items.map((f) => ({ name: f.name, tuning: f.tuning.slice() })),
     save(name, tuning) {
-      items = items.filter((f) => f.name !== name).concat([{ name, tuning: tuning.slice() }]);
+      // One entry per name and per tuning: saving a known tuning under a new name renames it.
+      items = items.filter((f) => f.name !== name && !same(f.tuning, tuning)).concat([{ name, tuning: tuning.slice() }]);
       persist();
     },
     remove(name) {

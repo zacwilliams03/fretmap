@@ -15,7 +15,8 @@ const TYPES = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=
 createServer((req, res) => {
   let file;
   try {
-    const path = decodeURIComponent((req.url === '/' ? '/index.html' : req.url).split('?')[0]);
+    const raw = req.url.split('?')[0];
+    const path = decodeURIComponent(raw === '/' ? '/index.html' : raw);
     file = resolve(ROOT, `.${path}`);
   } catch {
     res.writeHead(400).end('bad request');

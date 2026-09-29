@@ -54,6 +54,13 @@ check('favourites: save, replace by name, remove, persist', () => {
   assertEqual(createFavouriteStore(storage).list(), []);
 });
 
+check('favourites: saving a known tuning under a new name renames it', () => {
+  const store = createFavouriteStore(fakeStorage());
+  store.save('Old', [38, 45, 50, 55, 57, 62]);
+  store.save('New', [38, 45, 50, 55, 57, 62]);
+  assertEqual(store.list(), [{ name: 'New', tuning: [38, 45, 50, 55, 57, 62] }]);
+});
+
 check('favourites: corrupted data and missing storage are survivable', () => {
   const warn = console.warn;
   console.warn = () => {};

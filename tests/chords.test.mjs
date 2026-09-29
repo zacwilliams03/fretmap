@@ -27,3 +27,10 @@ check('findType is exact and case-sensitive', () => {
   assertEqual(findType('').id, 'maj');
   assertEqual(findType('xyz'), null);
 });
+
+check('no chord type repeats a pitch class', () => {
+  for (const t of CHORD_TYPES) {
+    const pcs = t.intervals.map((i) => i.semis % 12);
+    assertEqual(new Set(pcs).size, pcs.length, t.id);
+  }
+});
