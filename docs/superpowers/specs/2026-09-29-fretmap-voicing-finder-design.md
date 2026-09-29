@@ -67,7 +67,7 @@ A shape is:
 ## Finding shapes (`find.js`)
 
 `findVoicings({ tuning, capo, frets, chord }) -> shape[]` (unsorted). It returns `[]` when
-`chord` is null.
+`chord` is null or `capo > frets`.
 
 **Search space**
 - Only frets `capo..frets` are used. Fret `capo` is treated as open.
@@ -81,7 +81,8 @@ A shape is:
 **A combination is a shape only if all of these hold:**
 1. **At least 3 strings sound.**
 2. **Required tones are all present.** A tone is required unless it's droppable. Droppable tones:
-   - the plain `5`, when the chord has a third-role tone (so a power chord keeps its 5th);
+   - the plain `5`, when the chord has a real 3rd (`3` or `b3`), so power and sus chords keep
+     their 5th;
    - in chords whose type includes an `11` label: the `9`;
    - in chords whose type includes a `13` label: the `9` and the `11`;
    - in a `7alt`: any two of its four alterations (`b9 #9 #11 b13`). Its 7 notes can't fit
@@ -93,19 +94,20 @@ A shape is:
 3. **Slash chords:** the lowest-sounding note, by MIDI pitch, has the bass pitch class.
 4. **Fingering fits the hand.** Let the fretted notes be the strings with fret greater than
    `capo`.
-   - **Barre:** if the lowest fretted fret occurs on 2 or more strings, and no string between the
-     outermost of those is open, those notes count as one finger (`barre = that fret`).
-     Otherwise every fretted note is one finger.
+   - **One finger per note** when there are at most 4 fretted notes, with no barre.
+   - **Barre**, only when more fingers are needed: if the lowest fretted fret occurs on 2 or more
+     strings, and every string between the outermost of those is fretted (none open or muted,
+     because a barre would sound them), those notes count as one finger (`barre = that fret`).
    - **Thumb:** if the finger count is 5, the shape is still allowed when string 6 is fretted at
      a fret no higher than every other fretted note. It then gets `thumb = true` and is counted
      as 4 + thumb. String 6 is the thickest string (`tuning` index 0), whatever its pitch.
    - Anything needing more fingers is rejected.
 
-**Removing fragments:** drop shape B if another shape A has the same fretted or open notes on
-every string where B sounds, sounds on more strings, has the same bass pitch class and the same
-`missing` count, **and is no harder**: no more fingers, no wider span, and no thumb unless B
-has one too. B is then A with strings muted for no gain. (`x3201x` goes, but the D shape
-`xx0232` stays next to a stretchier `x50232`.)
+**Removing fragments:** drop shape B if another shape A is B **plus open strings only**, with
+the same bass pitch class and the same `missing` count, and no harder to play (no more fingers,
+no more muted middle strings, and no thumb unless B has one too). So `x3201x` goes next to
+`x32010`, but the small F `xx3211` stays next to the full barre `133211`, and the D shape
+`xx0232` next to `x50232`.
 
 ## Ranking (`rank.js`)
 
@@ -118,7 +120,7 @@ has one too. B is then A with strings muted for no gain. (`x3201x` goes, but the
 
    ```
    score = 2*fingers + span + 3*middleMutes + 0.25*max(0, lowFret - capo)
-           - openStrings - sounding + (thumb ? 2 : 0)
+           - openStrings - 1.5*sounding + (thumb ? 2 : 0)
    ```
 
    - `span = highFret - lowFret`, or 0 with no fretted notes.
@@ -135,7 +137,7 @@ has one too. B is then A with strings muted for no gain. (`x3201x` goes, but the
   altered tones keep their own label).
 - **position:** `open` when nothing is fretted. Otherwise `frets a–b` (`fret a` when a = b), or `barre n` when there's
   a barre. Append ` · thumb` when `thumb`. Frets are **relative to the capo**, so a D shape at
-  capo 2 reads `frets 1–3`, the same as it would with no capo, matching the chord box.
+  capo 2 reads `frets 2–3`, the same as it would with no capo, matching the chord box.
 
 ## UI
 
@@ -202,7 +204,7 @@ has one too. B is then A with strings muted for no gain. (`x3201x` goes, but the
   judged by pitch.
 - **Capo:** with capo 2, no shape uses frets 0–1. E major includes the D shape
   `[null, null, 2, 4, 5, 4]`, and `describe` gives its position relative to the capo as
-  `frets 1–3`, the same as an uncapoed D.
+  `frets 2–3`, the same as an uncapoed D.
 - **DADGAD, D major:** some shape with 5 or more open strings is in the top 5.
 - **Describe:** the labels for `x32010` in C are `root in bass`, `all notes`, `frets 1–3`.
 - **Existing tests:** all 42 still pass, unchanged.
