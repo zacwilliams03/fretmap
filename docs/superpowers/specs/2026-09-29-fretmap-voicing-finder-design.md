@@ -198,7 +198,7 @@ no more muted middle strings, and no thumb unless B has one too). So `x3201x` go
   - Nothing sounds fewer than 3 strings.
   - Nothing needs more than 4 fingers, except thumb shapes, which have string 6 at the lowest
     fretted fret.
-  - No barre has an open string between its ends.
+  - No barre has an open or muted string between its ends.
 - **Fragments:** `x3201x` is not in C's list when `x32010` is.
 - **Re-entrant tuning** (for example `[43, 48, 52, 57, 62, 55]`): for a slash chord, the bass is
   judged by pitch.
