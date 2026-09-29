@@ -34,7 +34,9 @@ export function mountToolbar(el, actions) {
   let currentName = 'Custom';
 
   tuningSelect.addEventListener('change', () => {
-    const [kind, name] = tuningSelect.value.split(':');
+    const cut = tuningSelect.value.indexOf(':');
+    const kind = tuningSelect.value.slice(0, cut);
+    const name = tuningSelect.value.slice(cut + 1);
     const source = kind === 'fav' ? favourites : PRESETS;
     const found = source.find((t) => t.name === name);
     if (found) actions.setTuning(found.tuning.slice());
@@ -55,6 +57,7 @@ export function mountToolbar(el, actions) {
     if (!name) return;
     saveForm.hidden = true;
     actions.saveFavourite(name);
+    tuningSelect.focus();
   });
   saveName.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') saveForm.hidden = true;
@@ -72,6 +75,7 @@ export function mountToolbar(el, actions) {
     if (armed) {
       disarm();
       actions.deleteFavourite(currentName);
+      tuningSelect.focus();
       return;
     }
     deleteButton.textContent = `Delete "${currentName}"?`;
@@ -91,7 +95,9 @@ export function mountToolbar(el, actions) {
     searchSlot: $('search-slot'),
     update(state, favs) {
       favourites = favs;
-      currentName = tuningName(state.tuning, favs);
+      const name = tuningName(state.tuning, favs);
+      if (name !== currentName) disarm();
+      currentName = name;
       const isFav = favs.some((f) => f.name === currentName);
       const option = (value, label) => {
         const o = document.createElement('option');

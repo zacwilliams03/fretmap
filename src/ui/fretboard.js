@@ -1,6 +1,6 @@
 // Fretboard: per-string tuners at the nut (HTML) beside an SVG neck. String 1 is on top.
 import { mapFretboard } from '../fretboard/map.js';
-import { stringNames } from '../tunings.js';
+import { stringNames, MIN_MIDI, MAX_MIDI } from '../tunings.js';
 import { pcName } from '../theory/notes.js';
 import { degreeLabel, prefersFlats } from '../theory/degrees.js';
 
@@ -25,6 +25,8 @@ export function mountFretboard(el, actions) {
 
   function render(state) {
     last = state;
+    // Tuners are rebuilt each render; remember which one had focus so keyboard users keep their place.
+    const focusedTuner = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.tuner : undefined;
     const { tuning, capo, frets, chord, labels, key } = state;
     const cells = mapFretboard({ tuning, capo, frets, chord });
     const flats = prefersFlats(chord);
@@ -39,6 +41,8 @@ export function mountFretboard(el, actions) {
       const down = document.createElement('button');
       down.type = 'button';
       down.textContent = '▼';
+      down.dataset.tuner = `${i}:down`;
+      down.disabled = tuning[i] <= MIN_MIDI;
       down.setAttribute('aria-label', `Tune string ${6 - i} down`);
       down.addEventListener('click', () => actions.stepString(i, -1));
       const note = document.createElement('span');
@@ -47,6 +51,8 @@ export function mountFretboard(el, actions) {
       const up = document.createElement('button');
       up.type = 'button';
       up.textContent = '▲';
+      up.dataset.tuner = `${i}:up`;
+      up.disabled = tuning[i] >= MAX_MIDI;
       up.setAttribute('aria-label', `Tune string ${6 - i} up`);
       up.addEventListener('click', () => actions.stepString(i, 1));
       row.append(down, note, up);
@@ -113,6 +119,10 @@ export function mountFretboard(el, actions) {
     }
 
     el.replaceChildren(tuners, root);
+    if (focusedTuner) {
+      const again = tuners.querySelector(`[data-tuner="${focusedTuner}"]`);
+      if (again) again.focus();
+    }
   }
 
   return { update: render };

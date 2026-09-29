@@ -4,22 +4,31 @@
 //   node serve.mjs          then open http://localhost:8124
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const PORT = 8124;
-const root = new URL('./', import.meta.url);
+const ROOT = fileURLToPath(new URL('./', import.meta.url));
 
 const TYPES = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8', md: 'text/plain; charset=utf-8' };
 
 createServer((req, res) => {
-  const path = decodeURIComponent((req.url === '/' ? '/index.html' : req.url).split('?')[0]);
-  // Keep the server to its own directory: no traversal out of the project.
-  if (path.includes('..')) {
+  let file;
+  try {
+    const path = decodeURIComponent((req.url === '/' ? '/index.html' : req.url).split('?')[0]);
+    file = resolve(ROOT, `.${path}`);
+  } catch {
+    res.writeHead(400).end('bad request');
+    return;
+  }
+  // Keep the server to its own directory: resolve first, then check the result.
+  if (!file.startsWith(ROOT)) {
     res.writeHead(403).end('forbidden');
     return;
   }
   try {
-    const body = readFileSync(new URL(`.${path}`, root));
-    const ext = path.split('.').pop();
+    const body = readFileSync(file);
+    const ext = file.split('.').pop();
     res.writeHead(200, { 'content-type': TYPES[ext] || 'application/octet-stream', 'cache-control': 'no-store' });
     res.end(body);
   } catch {

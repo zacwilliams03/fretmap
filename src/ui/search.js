@@ -85,7 +85,7 @@ export function mountSearch(el, actions) {
       highlight();
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (results[active]) pick(results[active]);
+      if (!list.hidden && results[active]) pick(results[active]);
     } else if (e.key === 'Escape') {
       open(false);
       input.value = current ? current.symbol : '';
