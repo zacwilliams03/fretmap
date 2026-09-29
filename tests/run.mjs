@@ -6,5 +6,6 @@ import './notes.test.mjs';
 import './chords.test.mjs';
 import './parse.test.mjs';
 import './catalog.test.mjs';
+import './degrees.test.mjs';
 
 report();
