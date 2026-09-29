@@ -77,40 +77,32 @@ export function mountShapes(el, actions) {
   let context = '';       // what the shape list was computed for
   let shapes = [];
   let expanded = false;
+  let drawn = '';         // what the boxes on screen were drawn for
+  let grid = null;
+  let last = null;        // latest { state, selected }, for the Show all button
 
-  // Esc clears a selected shape, except while typing in the chord search.
+  // Esc clears a selected shape, except inside the chord search or a form field, which use Esc
+  // for their own thing.
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || (e.target.closest && e.target.closest('.search'))) return;
+    if (e.key !== 'Escape' || (e.target.closest && e.target.closest('.search, form, input, select, textarea'))) return;
     actions.clearShape();
   });
 
-  function update(state, selected) {
-    if (!state.chord) {
-      el.hidden = true;
-      el.replaceChildren();
-      context = '';
-      return;
-    }
-    el.hidden = false;
-
-    const next = [state.chord.symbol, state.tuning.join('.'), state.capo, state.frets].join('|');
-    if (next !== context) {
-      context = next;
-      shapes = rankVoicings(findVoicings(state), state.capo);
-      expanded = false;
-    }
-
+  // Rebuilds the boxes. Only needed when the list, the labels or the key change; a selection
+  // change just flips aria-pressed (see markSelected), which stays fast with ~1000 boxes.
+  function draw(state) {
     const heading = document.createElement('h2');
     heading.textContent = `Shapes (${shapes.length})`;
     if (!shapes.length) {
       const empty = document.createElement('p');
       empty.className = 'empty';
       empty.textContent = `No playable shapes within frets ${state.capo}–${state.frets}. Try more frets (⚙) or a simpler chord.`;
+      grid = null;
       el.replaceChildren(heading, empty);
       return;
     }
 
-    const grid = document.createElement('div');
+    grid = document.createElement('div');
     grid.className = 'shape-grid';
     const shown = expanded ? shapes : shapes.slice(0, FIRST);
     shown.forEach((shape, i) => {
@@ -119,7 +111,6 @@ export function mountShapes(el, actions) {
       box.type = 'button';
       box.className = 'shape-box';
       box.dataset.key = shape.key;
-      box.setAttribute('aria-pressed', String(!!selected && selected.key === shape.key));
       box.setAttribute('aria-label', `${state.chord.symbol} shape ${i + 1}: ${lines.join(', ')}`);
       box.append(chordBox(shape, state));
       for (const line of lines) {
@@ -139,17 +130,53 @@ export function mountShapes(el, actions) {
       more.textContent = `Show all (${shapes.length})`;
       more.addEventListener('click', () => {
         expanded = true;
-        update(state, selected);
+        update(last.state, last.selected);
+        // The button is gone; carry keyboard focus to the first newly shown shape.
+        if (grid && grid.children[FIRST]) grid.children[FIRST].focus();
       });
       parts.push(more);
     }
-    // Boxes are rebuilt on every update; keep keyboard focus on the same shape.
+
+    // Keep keyboard focus on the same shape across a rebuild (e.g. switching Names/Numbers).
     const focused = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.key : undefined;
     el.replaceChildren(...parts);
     if (focused) {
       const again = grid.querySelector(`[data-key="${focused}"]`);
       if (again) again.focus();
     }
+  }
+
+  function markSelected(selected) {
+    if (!grid) return;
+    for (const box of grid.children) {
+      box.setAttribute('aria-pressed', String(!!selected && selected.key === box.dataset.key));
+    }
+  }
+
+  function update(state, selected) {
+    last = { state, selected };
+    if (!state.chord) {
+      el.hidden = true;
+      el.replaceChildren();
+      context = '';
+      drawn = '';
+      grid = null;
+      return;
+    }
+    el.hidden = false;
+
+    const next = [state.chord.symbol, state.tuning.join('.'), state.capo, state.frets].join('|');
+    if (next !== context) {
+      context = next;
+      shapes = rankVoicings(findVoicings(state), state.capo);
+      expanded = false;
+    }
+    const look = [context, state.labels, state.key.root, state.key.mode, expanded].join('|');
+    if (look !== drawn) {
+      drawn = look;
+      draw(state);
+    }
+    markSelected(selected);
   }
 
   return { update };
