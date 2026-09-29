@@ -4,7 +4,7 @@
 export function easeScore(shape, capo) {
   const height = shape.lowFret === null ? 0 : Math.max(0, shape.lowFret - capo);
   return 2 * shape.fingers + shape.span + 3 * shape.middleMutes + 0.25 * height -
-    shape.openStrings - shape.sounding + (shape.thumb ? 2 : 0);
+    shape.openStrings - 1.5 * shape.sounding + (shape.thumb ? 2 : 0);
 }
 
 export function rankVoicings(shapes, capo) {

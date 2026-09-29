@@ -22,6 +22,10 @@ check('voicings: textbook shapes in standard tuning', () => {
   assert(has(shapesFor('C').shapes, [x, 3, 5, 5, 5, 3]), 'C barre at 3');
   assert(has(shapesFor('G').shapes, [3, 2, 0, 0, 0, 3]), 'open G');
   assert(has(shapesFor('Am').shapes, [x, 0, 2, 2, 1, 0]), 'open Am');
+  assert(has(shapesFor('F').shapes, [x, x, 3, 2, 1, 1]), 'small F');
+  assert(has(shapesFor('F').shapes, [1, 3, 3, 2, 1, 1]), 'F barre');
+  assert(has(shapesFor('Gm').shapes, [x, x, 5, 3, 3, 3]), 'small Gm');
+  assert(has(shapesFor('Fmaj7').shapes, [x, x, 3, 2, 1, 0]), 'Fmaj7');
 });
 
 check('voicings: the best-known shape ranks first', () => {
@@ -76,6 +80,12 @@ check('voicings: hand rules', () => {
       assert(s.fingers <= 4 || (s.thumb && s.fingers === 5), `${symbol} ${s.key}: ${s.fingers} fingers`);
       if (s.lowFret !== null) assert(s.highFret - s.lowFret <= 3, `${symbol} ${s.key}: span`);
       if (s.thumb) assert(s.frets[0] === s.lowFret, `${symbol} ${s.key}: thumb not lowest`);
+      if (s.barre !== null) {
+        const on = s.frets.map((f, i) => (f === s.barre ? i : -1)).filter((i) => i >= 0 && !(s.thumb && i === 0));
+        for (let i = on[0]; i <= on[on.length - 1]; i++) {
+          assert(s.frets[i] !== null && s.frets[i] >= s.barre, `${symbol} ${s.key}: barre crosses string ${i}`);
+        }
+      }
     }
   }
 });
@@ -83,6 +93,10 @@ check('voicings: hand rules', () => {
 check('fingering: barre, open string under a barre, thumb', () => {
   assertEqual(fingering([x, 3, 5, 5, 5, 3], 0), { fingers: 4, barre: 3, thumb: false });
   assertEqual(fingering([x, 3, 2, 0, 1, 0], 0), { fingers: 3, barre: null, thumb: false });
+  // Barres only when needed: the open A shape is three fingers, not a barre.
+  assertEqual(fingering([x, 0, 2, 2, 2, 0], 0), { fingers: 3, barre: null, thumb: false });
+  // A barre can't cross a muted string (it would sound it).
+  assertEqual(fingering([1, x, 3, 2, 1, 1], 0), { fingers: 5, barre: null, thumb: true });
   // An open G string between the two fret-1 notes: a barre would stop it, so each is a finger.
   assertEqual(fingering([x, 1, 3, 0, 1, x], 0), { fingers: 3, barre: null, thumb: false });
   assertEqual(fingering([1, 3, 3, 2, 4, 5], 0), null);
@@ -102,7 +116,7 @@ check('voicings: capo', () => {
   const { chord, shapes } = shapesFor('E', { capo: 2 });
   assert(shapes.every((s) => s.frets.every((f) => f === null || f >= 2)), 'fret behind the capo');
   const d = shapes.find((s) => s.key === keyOf([x, x, 2, 4, 5, 4]));
-  assertEqual(describeVoicing(d, chord, 2)[2], 'barre 2');
+  assertEqual(describeVoicing(d, chord, 2)[2], 'frets 2–3');
 });
 
 check('voicings: re-entrant tuning judges the bass by pitch', () => {
@@ -118,7 +132,7 @@ check('voicings: re-entrant tuning judges the bass by pitch', () => {
 
 check('voicings: DADGAD D major favours open strings', () => {
   const top = shapesFor('D', { tuning: DADGAD }).shapes.slice(0, 5);
-  assert(top.some((s) => s.openStrings >= 4), 'no open-string shape in the top 5');
+  assert(top.some((s) => s.openStrings >= 5), 'no 5-open-string shape in the top 5');
 });
 
 check('describe: labels', () => {
@@ -134,8 +148,18 @@ check('describe: labels', () => {
   assert(/^no /.test(describeVoicing(partial, c13.chord, 0)[1]), 'missing label');
 });
 
-check('voicings: no chord, no shapes; score is deterministic', () => {
+check('voicings: edges of the neck', () => {
   assertEqual(findVoicings({ tuning: STANDARD, capo: 0, frets: 15, chord: null }), []);
-  const { shapes } = shapesFor('G');
-  assertEqual(easeScore(shapes[0], 0), easeScore({ ...shapes[0] }, 0));
+  assertEqual(findVoicings({ tuning: STANDARD, capo: 13, frets: 12, chord: parseChord('C') }), []);
+  const high = shapesFor('C', { capo: 12, frets: 15 }).shapes;
+  assert(high.length > 0 && high.every((s) => s.frets.every((f) => f === null || (f >= 12 && f <= 15))), 'capo 12');
+  assert(shapesFor('D', { capo: 0, frets: 3 }).shapes.length > 0, 'frets == capo + 3');
+});
+
+check('voicings: sus chords keep their 5th; easeScore prefers fuller shapes', () => {
+  for (const s of shapesFor('Csus2').shapes) assert(notesOf(s).has('G'), `Csus2 ${s.key} without G`);
+  const c = shapesFor('C').shapes;
+  const full = c.find((s) => s.key === keyOf([x, 3, 2, 0, 1, 0]));
+  const sparse = c.find((s) => s.key === keyOf([x, 3, x, 0, 1, 0]));
+  assert(easeScore(full, 0) < easeScore(sparse, 0), 'full shape should score easier than one with a muted middle');
 });

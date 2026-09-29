@@ -8,28 +8,29 @@ export const MAX_FINGERS = 4;  // plus the thumb on string 6, see fingering()
 export const MIN_SOUNDING = 3;
 const ALTERATIONS = ['b9', '#9', '#11', 'b13'];
 
-// Labels a shape may leave out: a plain 5th (not in a power chord), and the 9th/11th under a
-// named 11th or 13th. A 7alt needs only two of its four alterations (see evaluate). Everything
+// Labels a shape may leave out: a plain 5th when there's a real 3rd (not in power or sus chords),
+// and the 9th/11th under a named 11th or 13th. A 7alt needs only two of its four alterations (see evaluate). Everything
 // else defines the chord and is required.
 export function droppableLabels(chord) {
   const labels = chord.tones.filter((t) => t.role !== 'bass').map((t) => t.label);
   const drop = new Set();
-  if (chord.tones.some((t) => t.role === 'third')) drop.add('5');
+  if (labels.includes('3') || labels.includes('b3')) drop.add('5');
   if (labels.includes('11') || labels.includes('13')) drop.add('9');
   if (labels.includes('13')) drop.add('11');
   if (chord.type.id === '7alt') for (const l of ALTERATIONS) drop.add(l);
   return drop;
 }
 
-// Fingers needed for the fretted notes on `strings`. Notes on the lowest fret count as one
-// barre when there are 2+ of them and no open string rings between them.
+// Fingers needed for the fretted notes on `strings`. One finger per note when that's few
+// enough; otherwise the notes on the lowest fret may share one barre, but only if every string
+// between its ends is fretted, since a barre would sound an open or muted string it crosses.
 function hand(strings, frets, capo) {
-  if (!strings.length) return { fingers: 0, barre: null };
+  if (strings.length <= MAX_FINGERS) return { fingers: strings.length, barre: null };
   const low = Math.min(...strings.map((s) => frets[s]));
   const atLow = strings.filter((s) => frets[s] === low);
   if (atLow.length >= 2) {
     let clear = true;
-    for (let s = atLow[0]; s <= atLow[atLow.length - 1]; s++) if (frets[s] === capo) clear = false;
+    for (let s = atLow[0]; s <= atLow[atLow.length - 1]; s++) if (frets[s] === null || frets[s] <= capo) clear = false;
     if (clear) return { fingers: strings.length - atLow.length + 1, barre: low };
   }
   return { fingers: strings.length, barre: null };
@@ -97,18 +98,18 @@ function evaluate(frets, cells, chord, drop, bassPc, capo) {
   };
 }
 
-// B is a fragment of A when A plays the same thing on every string B sounds, sounds on more
-// strings, has the same bass and the same number of missing tones, and is no harder to play.
-// (So x3201x goes, but the D shape xx0232 survives next to a stretchier x50232.)
-function isFragmentOf(b, a) {
+// B is a fragment of A when A is B plus open strings only, with the same bass and the same
+// number of missing tones, and no harder to play. So x3201x goes next to x32010, but the small
+// F xx3211 stays next to the full barre 133211, and the D shape xx0232 next to x50232.
+function isFragmentOf(b, a, capo) {
   if (a.sounding <= b.sounding || a.bassPc !== b.bassPc || a.missing.length !== b.missing.length) return false;
-  if (a.fingers > b.fingers || a.span > b.span || (a.thumb && !b.thumb)) return false;
-  return b.frets.every((f, s) => f === null || a.frets[s] === f);
+  if (a.fingers > b.fingers || a.middleMutes > b.middleMutes || (a.thumb && !b.thumb)) return false;
+  return b.frets.every((f, s) => (f === null ? a.frets[s] === null || a.frets[s] === capo : a.frets[s] === f));
 }
 
 // Unsorted; see rank.js. Returns [] for no chord.
 export function findVoicings({ tuning, capo, frets, chord }) {
-  if (!chord) return [];
+  if (!chord || capo > frets) return [];
   const cells = mapFretboard({ tuning, capo, frets, chord });
   const drop = droppableLabels(chord);
   const bassPc = chord.bass ? cells.flat().find((c) => c.tone && c.tone.isBass).pc : null;
@@ -139,5 +140,5 @@ export function findVoicings({ tuning, capo, frets, chord }) {
   }
 
   const shapes = [...found.values()].filter(Boolean);
-  return shapes.filter((b) => !shapes.some((a) => a !== b && isFragmentOf(b, a)));
+  return shapes.filter((b) => !shapes.some((a) => a !== b && isFragmentOf(b, a, capo)));
 }
