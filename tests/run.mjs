@@ -10,5 +10,6 @@ import './degrees.test.mjs';
 import './map.test.mjs';
 import './tunings.test.mjs';
 import './state.test.mjs';
+import './build.test.mjs';
 
 report();
