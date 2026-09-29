@@ -4,5 +4,6 @@
 import { report } from './harness.mjs';
 import './notes.test.mjs';
 import './chords.test.mjs';
+import './parse.test.mjs';
 
 report();
