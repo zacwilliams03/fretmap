@@ -3,5 +3,6 @@
 //   node tests/run.mjs
 import { report } from './harness.mjs';
 import './notes.test.mjs';
+import './chords.test.mjs';
 
 report();
