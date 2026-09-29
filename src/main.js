@@ -54,5 +54,8 @@ function render() {
   info.update(state);
 }
 
+// Hand-edited URLs and back/forward. replaceState never fires this, so it only sees outside changes.
+window.addEventListener('hashchange', () => commit(hashToState(location.hash)));
+
 history.replaceState(null, '', stateToHash(state));
 render();

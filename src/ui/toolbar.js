@@ -13,6 +13,7 @@ export function mountToolbar(el, actions) {
   el.innerHTML = `
     <label class="field">Tuning <select id="tuning-select"></select></label>
     <button type="button" class="icon" id="save-tuning" title="Save this tuning" aria-label="Save this tuning">☆</button>
+    <form class="save-form" id="save-form" hidden><input id="save-name" type="text" placeholder="Name this tuning" aria-label="Tuning name" maxlength="40"><button type="submit">Save</button></form>
     <button type="button" class="icon" id="delete-tuning" title="Delete this saved tuning" aria-label="Delete this saved tuning" hidden>✕</button>
     <label class="field">Capo <select id="capo-select">${capoOptions}</select></label>
     <div class="search-slot" id="search-slot"></div>
@@ -38,12 +39,43 @@ export function mountToolbar(el, actions) {
     const found = source.find((t) => t.name === name);
     if (found) actions.setTuning(found.tuning.slice());
   });
+  const saveForm = $('save-form');
+  const saveName = $('save-name');
   $('save-tuning').addEventListener('click', () => {
-    const name = (prompt('Name this tuning:', currentName === 'Custom' ? '' : currentName) || '').trim();
-    if (name) actions.saveFavourite(name);
+    saveForm.hidden = !saveForm.hidden;
+    if (!saveForm.hidden) {
+      saveName.value = currentName === 'Custom' ? '' : currentName;
+      saveName.focus();
+      saveName.select();
+    }
   });
-  $('delete-tuning').addEventListener('click', () => {
-    if (confirm(`Delete saved tuning "${currentName}"?`)) actions.deleteFavourite(currentName);
+  saveForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = saveName.value.trim();
+    if (!name) return;
+    saveForm.hidden = true;
+    actions.saveFavourite(name);
+  });
+  saveName.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') saveForm.hidden = true;
+  });
+
+  // Two-step delete: the first click arms the button, a second click within 3s deletes.
+  const deleteButton = $('delete-tuning');
+  let armed = null;
+  function disarm() {
+    clearTimeout(armed);
+    armed = null;
+    deleteButton.textContent = '✕';
+  }
+  deleteButton.addEventListener('click', () => {
+    if (armed) {
+      disarm();
+      actions.deleteFavourite(currentName);
+      return;
+    }
+    deleteButton.textContent = `Delete "${currentName}"?`;
+    armed = setTimeout(disarm, 3000);
   });
   $('capo-select').addEventListener('change', (e) => actions.setCapo(Number(e.target.value)));
   el.querySelectorAll('[data-labels]').forEach((b) =>
