@@ -10,7 +10,8 @@ export const CATALOG = ROOT_SPELLINGS.flatMap((r) =>
   CHORD_TYPES.map((type) => buildChord(parseNote(r), type, null)));
 
 // Results for the search box. Exact parse first (covers slash chords), then catalog entries
-// with the same root whose suffix or an alias starts with what was typed after the root.
+// with the same root whose suffix starts with what was typed after the root, then those
+// matched only through an alias (so "Cm" lists minor chords before C via "maj").
 export function searchChords(input, currentRoot = 'C', limit = 50) {
   const text = input.trim();
   if (!text) {
@@ -18,20 +19,18 @@ export function searchChords(input, currentRoot = 'C', limit = 50) {
     return CHORD_TYPES.map((type) => buildChord(root, type, null)).slice(0, limit);
   }
 
-  const results = [];
   const exact = parseChord(text);
-  if (exact) results.push(exact);
-
   const m = /^([A-Ga-g][#b]?)\s*(.*)$/.exec(text);
-  if (!m) return results;
+  if (!m) return exact ? [exact] : [];
   const rootName = noteName(parseNote(m[1]));
   const rest = m[2];
+  const suffixHits = [];
+  const aliasHits = [];
   for (const chord of CATALOG) {
-    if (results.length >= limit) break;
     if (noteName(chord.root) !== rootName) continue;
     if (exact && chord.symbol === exact.symbol) continue;
-    const names = [chord.type.suffix, ...chord.type.aliases];
-    if (names.some((n) => n.startsWith(rest))) results.push(chord);
+    if (chord.type.suffix.startsWith(rest)) suffixHits.push(chord);
+    else if (chord.type.aliases.some((a) => a.startsWith(rest))) aliasHits.push(chord);
   }
-  return results;
+  return (exact ? [exact] : []).concat(suffixHits, aliasHits).slice(0, limit);
 }

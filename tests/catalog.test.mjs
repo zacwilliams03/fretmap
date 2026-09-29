@@ -19,7 +19,13 @@ check('search: exact parse first, then prefix matches on the same root', () => {
   assertEqual(new Set(r.map((c) => c.symbol)).size, r.length, 'duplicates');
   assertEqual(searchChords('D/F#')[0].symbol, 'D/F#');
   assertEqual(searchChords('Cxyz'), []);
-  assert(searchChords('C').length <= 50, 'limit');
+  assertEqual(searchChords('C', 'C', 5).length, 5);
+});
+
+check('search: suffix matches rank ahead of alias-only matches', () => {
+  const r = searchChords('Cm').map((c) => c.symbol);
+  assertEqual(r[0], 'Cm');
+  assert(r.indexOf('C') > r.indexOf('Cm13'), 'C major (via "maj") ranked above minor chords');
 });
 
 check('search: empty input lists every type for the current root', () => {
