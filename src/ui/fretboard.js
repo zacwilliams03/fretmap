@@ -21,10 +21,13 @@ function svg(tag, attrs, text) {
 
 export function mountFretboard(el, actions) {
   let last = null;
-  new ResizeObserver(() => last && render(last)).observe(el);
+  let lastHighlight = null;
+  new ResizeObserver(() => last && render(last, lastHighlight)).observe(el);
 
-  function render(state) {
+  // `highlight` is an optional shape from the gallery. Without one, the neck draws exactly as v1.
+  function render(state, highlight = null) {
     last = state;
+    lastHighlight = highlight;
     // Tuners are rebuilt each render; remember which one had focus so keyboard users keep their place.
     const focusedTuner = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.tuner : undefined;
     const { tuning, capo, frets, chord, labels, key } = state;
@@ -91,14 +94,22 @@ export function mountFretboard(el, actions) {
 
     for (let r = 0; r < 6; r++) {
       const row = cells[5 - r]; // display row 0 is string 1
+      const shapeFret = highlight ? highlight.frets[5 - r] : undefined;
       for (const cell of row) {
-        const g = svg('g', { opacity: cell.playable ? 1 : 0.25 });
+        if (highlight && shapeFret === null && cell.fret === 0) {
+          // A string the shape mutes: ✕ in the open column instead of its usual label.
+          root.append(svg('text', { x: cx(0), y: cy(r) + 5, 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 700, fill: 'var(--text)' }, '✕'));
+          continue;
+        }
+        const inShape = highlight && shapeFret === cell.fret;
+        const g = svg('g', { opacity: cell.playable && (!highlight || inShape) ? 1 : 0.25 });
         const x = cx(cell.fret);
         const y = cy(r);
         const degree = labels === 'numbers' ? degreeLabel(cell.pc, key) : null;
         if (cell.tone) {
           const t = cell.tone;
           if (t.isBass) g.append(svg('circle', { cx: x, cy: y, r: DOT_R + 3, fill: 'none', stroke: 'var(--text)', 'stroke-width': 2 }));
+          if (inShape) g.append(svg('circle', { cx: x, cy: y, r: DOT_R + (t.isBass ? 7 : 4), fill: 'none', stroke: 'var(--text)', 'stroke-width': 2.5 }));
           g.append(svg('circle', { cx: x, cy: y, r: DOT_R, fill: `var(--${t.role})` }));
           const text = degree ? degree.label : t.label === '1' ? 'R' : t.label;
           const ink = t.role === 'extension' ? '#1c1917' : '#ffffff';

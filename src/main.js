@@ -5,6 +5,7 @@ import { mountToolbar } from './ui/toolbar.js';
 import { mountSearch } from './ui/search.js';
 import { mountFretboard } from './ui/fretboard.js';
 import { mountInfo } from './ui/info.js';
+import { mountShapes } from './ui/shapes.js';
 
 function getStorage() {
   try {
@@ -16,8 +17,15 @@ function getStorage() {
 
 const favourites = createFavouriteStore(getStorage());
 let state = hashToState(location.hash);
+let selectedShape = null; // highlighted gallery shape; UI-only, never in the URL
+
+// A shape only makes sense for the chord, tuning, capo and frets it was found for.
+function shapeContext(s) {
+  return [s.chord ? s.chord.symbol : '', s.tuning.join('.'), s.capo, s.frets].join('|');
+}
 
 function commit(next) {
+  if (shapeContext(next) !== shapeContext(state)) selectedShape = null;
   state = next;
   history.replaceState(null, '', stateToHash(state));
   render();
@@ -40,18 +48,29 @@ const actions = {
     favourites.remove(name);
     render();
   },
+  selectShape(shape) {
+    selectedShape = selectedShape && selectedShape.key === shape.key ? null : shape;
+    render();
+  },
+  clearShape() {
+    if (!selectedShape) return;
+    selectedShape = null;
+    render();
+  },
 };
 
 const toolbar = mountToolbar(document.getElementById('toolbar'), actions);
 const search = mountSearch(toolbar.searchSlot, actions);
 const board = mountFretboard(document.getElementById('board'), actions);
 const info = mountInfo(document.getElementById('info'));
+const shapes = mountShapes(document.getElementById('shapes'), actions);
 
 function render() {
   toolbar.update(state, favourites.list());
   search.update(state);
-  board.update(state);
+  board.update(state, selectedShape);
   info.update(state);
+  shapes.update(state, selectedShape);
 }
 
 // Hand-edited URLs and back/forward. replaceState never fires this, so it only sees outside changes.
