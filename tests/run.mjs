@@ -11,5 +11,6 @@ import './map.test.mjs';
 import './tunings.test.mjs';
 import './state.test.mjs';
 import './build.test.mjs';
+import './voicings.test.mjs';
 
 report();
