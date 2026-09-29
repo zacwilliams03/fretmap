@@ -181,10 +181,11 @@ Slash chords are not listed. They come only from the parser.
 
 - `tuning` is 6 MIDI numbers. Index 0 is string 6 (the thickest) and index 5 is string 1.
   Strings are **not** assumed to be in pitch order, so re-entrant tunings are allowed.
-- Each cell is `{ midi, pc, playable, tone }`. `playable = fret >= capo`. `tone` is the matching
+- Each cell is `{ fret, midi, pc, playable, tone }`. `playable = fret >= capo`. `tone` is the matching
   chord tone `{ note, label, role, isBass }` or `null`.
-- A slash bass that's already a chord tone sets `isBass` on that tone. A bass that isn't a chord
-  tone becomes its own tone with role `bass`.
+- Slash-bass handling happens once, in `parse.js` (`buildChord`): a bass that's already a chord
+  tone sets `isBass` on that tone, and one that isn't becomes its own tone with role `bass`.
+  `mapFretboard` just matches cells to tones by pitch class.
 - `frets` is the highest fret shown. `state.js` keeps at least 3 frets above the capo: if
   `capo > frets − 3`, it raises `frets` to the smallest allowed setting (12/15/19/22/24) that
   fits. For example, capo 12 with 12 frets becomes 15.
@@ -238,7 +239,8 @@ The mode becomes minor if the chord type has a b3 and no 3, otherwise major.
 Layout A: a top toolbar and a full-width fretboard.
 
 - **Toolbar:** tuning menu (My tunings, then presets; shows the tuning name or Custom) with ☆
-  Save; capo menu 0–12; chord search; a Names | Numbers toggle; a key menu with 📌 (visible only
+  Save (opens an inline name field) and a ✕ button that deletes the current tuning when it is a
+  saved favourite (click twice within 3 seconds to confirm); capo menu 0–12; chord search; a Names | Numbers toggle; a key menu with 📌 (visible only
   in Numbers mode); ⚙ settings (frets shown: 12 / 15 / 19 / 22 / 24).
 - **Fretboard (SVG):** string 1 at the top. Each string's tuner (▼ `D2` ▲) sits at the nut. The
   nut is drawn thick and the capo is drawn as a bar just behind its fret. Frets behind the capo
