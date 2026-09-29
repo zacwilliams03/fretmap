@@ -58,7 +58,9 @@ A shape is:
   thumb: boolean,                    // string 6 fretted with the thumb
   barre: fret | null,
   lowFret, highFret,                 // fretted range; null when nothing is fretted
-  score                              // ease score, lower is easier (see Ranking)
+  span,                              // highFret - lowFret, 0 when nothing is fretted
+  key,                               // "x,3,2,0,1,0": identity for dedupe and selection
+  bassPc, sounding, openStrings, middleMutes   // inputs to ranking
 }
 ```
 
@@ -81,10 +83,12 @@ A shape is:
 2. **Required tones are all present.** A tone is required unless it's droppable. Droppable tones:
    - the plain `5`, when the chord has a third-role tone (so a power chord keeps its 5th);
    - in chords whose type includes an `11` label: the `9`;
-   - in chords whose type includes a `13` label: the `9` and the `11`.
+   - in chords whose type includes a `13` label: the `9` and the `11`;
+   - in a `7alt`: any two of its four alterations (`b9 #9 #11 b13`). Its 7 notes can't fit
+     on 6 strings, and "alt" means "some alterations", so at least two must be present.
 
    All other tones are required: the root, the third-role tone, the seventh-role tone, every
-   altered tone (`b5 #5 b9 #9 #11 b13`) and the named top extension. A slash-bass tone is
+   altered tone (`b5 #5 b9 #9 #11 b13`, except in a `7alt` as above) and the named top extension. A slash-bass tone is
    required.
 3. **Slash chords:** the lowest-sounding note, by MIDI pitch, has the bass pitch class.
 4. **Fingering fits the hand.** Let the fretted notes be the strings with fret greater than
@@ -98,12 +102,14 @@ A shape is:
    - Anything needing more fingers is rejected.
 
 **Removing fragments:** drop shape B if another shape A has the same fretted or open notes on
-every string where B sounds, sounds on more strings, and has the same bass pitch class and the
-same `missing` count. B is A with strings muted for no gain.
+every string where B sounds, sounds on more strings, has the same bass pitch class and the same
+`missing` count, **and is no harder**: no more fingers, no wider span, and no thumb unless B
+has one too. B is then A with strings muted for no gain. (`x3201x` goes, but the D shape
+`xx0232` stays next to a stretchier `x50232`.)
 
 ## Ranking (`rank.js`)
 
-`rankVoicings(shapes, chord) -> shape[]` returns a new sorted array. Sort keys, in order:
+`rankVoicings(shapes, capo) -> shape[]` returns a new sorted array, using `easeScore(shape, capo)`. Sort keys, in order:
 
 1. **Root in bass first.** `bassTone.role === 'root'`. For slash chords every shape has the
    slash bass, so this key ties.
@@ -111,8 +117,8 @@ same `missing` count. B is A with strings muted for no gain.
 3. **Ease score, ascending:**
 
    ```
-   score = 2*fingers + span + 2*middleMutes + 0.25*max(0, lowFret - capo)
-           - openStrings - 0.5*sounding + (thumb ? 2 : 0)
+   score = 2*fingers + span + 3*middleMutes + 0.25*max(0, lowFret - capo)
+           - openStrings - sounding + (thumb ? 2 : 0)
    ```
 
    - `span = highFret - lowFret`, or 0 with no fretted notes.
@@ -125,8 +131,9 @@ same `missing` count. B is A with strings muted for no gain.
 `describeVoicing(shape, chord, capo) -> [bass, notes, position]`:
 - **bass:** `root in bass`, `3rd in bass`, `5th in bass`, `7th in bass`, or `bass <note>` for
   anything else. Slash chords always use `bass <note>`.
-- **notes:** `all notes`, or `no 5th` / `no 9th` / `no 9th, 11th` (from `missing`).
-- **position:** `open` when nothing is fretted. Otherwise `frets a–b`, or `barre n` when there's
+- **notes:** `all notes`, or `no 5th` / `no 9th` / `no 9th, 11th` / `no b9` (from `missing`;
+  altered tones keep their own label).
+- **position:** `open` when nothing is fretted. Otherwise `frets a–b` (`fret a` when a = b), or `barre n` when there's
   a barre. Append ` · thumb` when `thumb`. Frets are **relative to the capo**, so a D shape at
   capo 2 reads `frets 1–3`, the same as it would with no capo, matching the chord box.
 
@@ -150,8 +157,8 @@ same `missing` count. B is A with strings muted for no gain.
 
 **Selection:**
 - Each box is a `<button>` with `aria-pressed`. Clicking it, or Enter/Space, selects it, and the
-  same action on the selected box clears it. **Esc** anywhere clears it (ignored while the chord
-  search list is open).
+  same action on the selected box clears it. **Esc** anywhere clears it (ignored while focus is in the
+  chord search, where Esc already restores the chord).
 - Changing the chord, tuning, capo or fret count clears the selection. Changing labels or key
   keeps it.
 
