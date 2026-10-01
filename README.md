@@ -37,8 +37,8 @@ hand.
 ## Playable shapes
 
 Pick a chord and the **Shapes** gallery under the neck lists every fingerable shape in the
-current tuning and capo, best first: root in the bass, then all notes present, then easiest to
-play (few fingers, small stretch, open strings). Click a shape to ring it on the neck; click it
+current tuning and capo, best first: root in the bass, then easiest to play (few fingers, small
+stretch, low on the neck, open strings, nothing left out, a clear low end). Click a shape to ring it on the neck; click it
 again or press Esc to clear it. Chord boxes count frets from the capo.
 
 A shape may drop a plain 5th, the 9th/11th under a named 11th or 13th, and up to two

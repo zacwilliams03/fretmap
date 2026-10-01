@@ -1,7 +1,7 @@
 # Fretmap — playable shapes (voicing finder)
 
 **Date:** 2026-09-29
-**Status:** Approved in brainstorming, awaiting spec review
+**Status:** Implemented (ranking revised 2026-10-01, see 2026-10-01-fretmap-ranking-strings-hosting-design.md)
 **Builds on:** `2026-09-29-fretmap-chord-map-design.md` (v1)
 
 ## Purpose
@@ -11,7 +11,7 @@ diagrams, ranked so the most useful ones come first. Clicking a diagram shows th
 main neck.
 
 **Add-only constraint:** nothing that exists today changes. With no chord chosen, or with no
-shape selected, the page looks and behaves exactly as v1 does. All 42 existing tests run
+shape selected, the page looks and behaves exactly as v1 does. All v1 tests run
 unchanged.
 
 ## Architecture
@@ -60,7 +60,7 @@ A shape is:
   lowFret, highFret,                 // fretted range; null when nothing is fretted
   span,                              // highFret - lowFret, 0 when nothing is fretted
   key,                               // "x,3,2,0,1,0": identity for dedupe and selection
-  bassPc, sounding, openStrings, middleMutes   // inputs to ranking
+  bassPc, sounding, openStrings, middleMutes, muddyBass   // inputs to ranking
 }
 ```
 
@@ -115,18 +115,20 @@ no more muted middle strings, and no thumb unless B has one too). So `x3201x` go
 
 1. **Root in bass first.** `bassTone.role === 'root'`. For slash chords every shape has the
    slash bass, so this key ties.
-2. **Fewest missing tones.**
-3. **Ease score, ascending:**
+2. **Ease score, ascending:**
 
    ```
-   score = 2*fingers + span + 3*middleMutes + 0.25*max(0, lowFret - capo)
+   score = 2*fingers + span + 3*middleMutes + max(0, lowFret - capo)
            - openStrings - 1.5*sounding + (thumb ? 2 : 0)
+           + 2*missing.length + (muddyBass ? 4 : 0)
    ```
 
    - `span = highFret - lowFret`, or 0 with no fretted notes.
    - `middleMutes` is the number of muted strings that have a sounding string on both sides.
    - `openStrings` counts strings at fret `capo`.
-4. **Ties:** lower `lowFret` first, then compare `frets` as strings.
+   - `muddyBass`: the two lowest sounding pitches are 1, 2 or 3 semitones apart with the lower
+     below E3, Eb3 or C3 respectively.
+3. **Ties:** lower `lowFret` first, then compare `key` as strings.
 
 ## Labels (`describe.js`)
 
@@ -152,6 +154,7 @@ no more muted middle strings, and no thumb unless B has one too). So `x3201x` go
   - Dots use the role colours. Their label is the interval in Names mode or the key degree in
     Numbers mode.
   - A barre is drawn as a rounded bar. A thumb note gets a small `T`.
+  - Dot labels are 10px; three-character labels are squeezed to fit the dot.
 - The 3 description lines go under each box.
 - **Empty:** *"No playable shapes within frets {capo}–{frets}. Try more frets (⚙) or a simpler
   chord."*
@@ -166,6 +169,7 @@ no more muted middle strings, and no thumb unless B has one too). So `x3201x` go
   first newly shown box.
 - Changing the chord, tuning, capo or fret count clears the selection. Changing labels or key
   keeps it.
+- A selected box has a tinted background and a solid border; keyboard focus shows the standard outline ring, so the two stay distinct.
 
 **Neck highlight (`fretboard.js`, only when a highlight is passed):**
 - Cells belonging to the shape keep their dot and gain a ring (2.5px, `var(--text)`), drawn like
@@ -175,7 +179,7 @@ no more muted middle strings, and no thumb unless B has one too). So `x3201x` go
 
 ## Error handling
 
-- `findVoicings` never throws. A null chord gives `[]`.
+- `findVoicings` never throws. A null chord, or a slash bass found nowhere on the neck, gives `[]`.
 - An empty result shows the message above rather than an empty section.
 - Storage and URL are not involved: the selection is transient.
 
@@ -191,7 +195,9 @@ no more muted middle strings, and no thumb unless B has one too). So `x3201x` go
   - For C, the first shape is `x32010`.
   - For C/E, every shape's lowest note is E.
   - Root-in-bass shapes all come before the others.
-  - Complete shapes come before incomplete ones within the same bass group.
+  - C7 x32310, Bm x24432, Dsus4 xx0233 and Bb x13331 are in their top 3; G 320003 in its top 2.
+  - F, D, E, Dm, A7, G7, F#m, D7, E7, Em, B7, Gm, Asus2, Am7 and Dmaj7 each have their best-known shape at #1.
+  - A missing tone costs 2, a muddy bass 4, a fret of height 1.
 - **Required tones:**
   - No Cmaj7 shape lacks B.
   - C13 shapes may lack D and F but always have A (the 13) and Bb.
@@ -208,9 +214,9 @@ no more muted middle strings, and no thumb unless B has one too). So `x3201x` go
 - **Capo:** with capo 2, no shape uses frets 0–1. E major includes the D shape
   `[null, null, 2, 4, 5, 4]`, and `describe` gives its position relative to the capo as
   `frets 2–3`, the same as an uncapoed D.
-- **DADGAD, D major:** some shape with 5 or more open strings is in the top 5.
+- **DADGAD, D major:** the top shape has 4 or more open strings.
 - **Describe:** the labels for `x32010` in C are `root in bass`, `all notes`, `frets 1–3`.
-- **Existing tests:** all 42 still pass, unchanged.
+- **Existing tests:** all v1 tests still pass, unchanged.
 
 **Browser checklist (by hand):**
 1. With no chord, the page is identical to v1, and `#shapes` is hidden.
