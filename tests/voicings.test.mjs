@@ -193,3 +193,8 @@ check('rank: what each penalty costs', () => {
   assertEqual(easeScore({ ...base, muddyBass: true }, 0) - s0, 4, 'muddy bass');
   assertEqual(easeScore({ ...base, lowFret: base.lowFret + 3 }, 0) - s0, 3, 'three frets higher');
 });
+
+check('voicings: a slash bass that is nowhere on the neck gives no shapes', () => {
+  const unison = [40, 40, 40, 40, 40, 40]; // every string E2: frets 0–3 only reach E F F# G
+  assertEqual(findVoicings({ tuning: unison, capo: 0, frets: 3, chord: parseChord('C/D') }), []);
+});

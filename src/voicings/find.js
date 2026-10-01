@@ -124,7 +124,9 @@ export function findVoicings({ tuning, capo, frets, chord }) {
   if (!chord || capo > frets) return [];
   const cells = mapFretboard({ tuning, capo, frets, chord });
   const drop = droppableLabels(chord);
-  const bassPc = chord.bass ? cells.flat().find((c) => c.tone && c.tone.isBass).pc : null;
+  const bassCell = chord.bass ? cells.flat().find((c) => c.tone && c.tone.isBass) : null;
+  if (chord.bass && !bassCell) return [];
+  const bassPc = bassCell ? bassCell.pc : null;
   const found = new Map();
 
   const lastStart = Math.max(capo + 1, frets - WINDOW + 1);
