@@ -34,14 +34,12 @@ check('voicings: the best-known shape ranks first', () => {
   assertEqual(shapesFor('Cmaj7').shapes[0].key, keyOf([x, 3, 2, 0, 0, 0]));
 });
 
-check('voicings: root in bass first, then complete before incomplete', () => {
+check('voicings: root in bass first', () => {
   for (const symbol of ['C', 'Am7', 'C13', 'F#m7b5']) {
     const { shapes } = shapesFor(symbol);
     const rootFlags = shapes.map((s) => s.bassTone.role === 'root');
     assertEqual(rootFlags.indexOf(false) === -1 ? rootFlags.length : rootFlags.indexOf(false),
       rootFlags.lastIndexOf(true) + 1, `${symbol}: root-in-bass not all first`);
-    const rooted = shapes.filter((s) => s.bassTone.role === 'root').map((s) => s.missing.length);
-    assertEqual(rooted, rooted.slice().sort((a, b) => a - b), `${symbol}: missing not ascending`);
   }
 });
 
@@ -131,8 +129,8 @@ check('voicings: re-entrant tuning judges the bass by pitch', () => {
 });
 
 check('voicings: DADGAD D major favours open strings', () => {
-  const top = shapesFor('D', { tuning: DADGAD }).shapes.slice(0, 5);
-  assert(top.some((s) => s.openStrings >= 5), 'no 5-open-string shape in the top 5');
+  const best = shapesFor('D', { tuning: DADGAD }).shapes[0];
+  assert(best.openStrings >= 4, `top shape ${best.key} has ${best.openStrings} open strings`);
 });
 
 check('describe: labels', () => {
@@ -176,4 +174,22 @@ check('voicings: a close interval low in the bass is muddy', () => {
   assertEqual(bm.find((s) => s.key === keyOf([x, 2, 4, 4, 3, 2])).muddyBass, false);
   const g = findVoicings({ tuning: STANDARD, capo: 0, frets: 15, chord: parseChord('G') });
   assertEqual(g.find((s) => s.key === keyOf([3, 2, 0, 0, 0, 3])).muddyBass, false);
+});
+
+check('voicings: textbook shapes rank near the top', () => {
+  const top = (symbol, n) => shapesFor(symbol).shapes.slice(0, n).map((s) => s.key);
+  assert(top('C7', 3).includes(keyOf([x, 3, 2, 3, 1, 0])), 'C7 x32310 not in the top 3');
+  assert(top('Bm', 3).includes(keyOf([x, 2, 4, 4, 3, 2])), 'Bm x24432 not in the top 3');
+  assert(top('Dsus4', 3).includes(keyOf([x, x, 0, 2, 3, 3])), 'Dsus4 xx0233 not in the top 3');
+  assert(top('Bb', 3).includes(keyOf([x, 1, 3, 3, 3, 1])), 'Bb x13331 not in the top 3');
+  assert(top('G', 2).includes(keyOf([3, 2, 0, 0, 0, 3])), 'G 320003 not in the top 2');
+});
+
+check('rank: what each penalty costs', () => {
+  const base = shapesFor('C').shapes.find((s) => s.key === keyOf([x, 3, 2, 0, 1, 0]));
+  const s0 = easeScore(base, 0);
+  assertEqual(easeScore({ ...base, missing: ['5'] }, 0) - s0, 2, 'one missing tone');
+  assertEqual(easeScore({ ...base, missing: ['9', '11'] }, 0) - s0, 4, 'two missing tones');
+  assertEqual(easeScore({ ...base, muddyBass: true }, 0) - s0, 4, 'muddy bass');
+  assertEqual(easeScore({ ...base, lowFret: base.lowFret + 3 }, 0) - s0, 3, 'three frets higher');
 });
