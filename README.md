@@ -15,6 +15,13 @@ node build.mjs
 Then double-click `dist/fretmap.html`, or drag the `dist/` folder onto
 [Netlify Drop](https://app.netlify.com/drop) to use it from a phone.
 
+## Deploy
+
+Pushing to `main` runs `.github/workflows/pages.yml`: it runs the tests, builds, and publishes
+`dist/fretmap.html` as the site's `index.html` on GitHub Pages. A failing test stops the
+deploy. To redeploy without a change, open the repo's **Actions** tab, pick **Deploy to GitHub
+Pages** and press **Run workflow**.
+
 ## Develop
 
 ```bash

@@ -166,7 +166,7 @@ Ranking is unchanged.
 - Concurrency group `pages`, so in-progress deploys are not cancelled.
 - Build job:
   1. checkout
-  2. `actions/setup-node` (Node 20)
+  2. `actions/setup-node` (Node 24, the current LTS; action majors checked at implementation time)
   3. `node tests/run.mjs`
   4. `node build.mjs`
   5. `mkdir _site && cp dist/fretmap.html _site/index.html`
