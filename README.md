@@ -42,6 +42,9 @@ stretch, low on the neck, open strings, nothing left out, a clear low end). Clic
 ring it on the neck; click it again or press Esc to clear it. Chord boxes count frets from the
 capo.
 
+**Strings** above the gallery limits it to shapes that sound exactly 3, 4, 5 or 6 strings —
+3 gives triads and shell voicings. It's saved in the link (`&n=3`); **Any** shows everything.
+
 A shape may drop a plain 5th, the 9th/11th under a named 11th or 13th, and up to two
 alterations of a 7alt. A thumb over the top is allowed on string 6. The rules live in
 `src/voicings/`.

@@ -102,6 +102,7 @@ export function mountShapes(el, actions) {
     const label = document.createElement('span');
     label.className = 'seg-label';
     label.textContent = 'Strings';
+    label.setAttribute('aria-hidden', 'true'); // the group's aria-label already says it
     const group = document.createElement('div');
     group.className = 'seg';
     group.setAttribute('role', 'group');
