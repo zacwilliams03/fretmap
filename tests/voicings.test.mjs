@@ -207,3 +207,23 @@ check('voicings: a slash bass that is nowhere on the neck gives no shapes', () =
   const unison = [40, 40, 40, 40, 40, 40]; // every string E2: frets 0–3 only reach E F F# G
   assertEqual(findVoicings({ tuning: unison, capo: 0, frets: 3, chord: parseChord('C/D') }), []);
 });
+
+check('voicings: string-count filter', () => {
+  const find = (symbol, strings) =>
+    findVoicings({ tuning: STANDARD, capo: 0, frets: 15, chord: parseChord(symbol), strings });
+  const c4 = find('C', 4);
+  assert(c4.length > 0 && c4.every((s) => s.sounding === 4), 'C, 4 strings');
+  // Filtering comes before fragment removal, so 4-string fragments of 5-string shapes stay.
+  assert(c4.some((s) => s.key === keyOf([x, 3, 2, 0, 1, x])), 'x3201x missing from 4-string C');
+  const c7 = find('C7', 3);
+  assert(c7.length > 0, 'no 3-string C7');
+  for (const s of c7) {
+    assertEqual(s.sounding, 3, s.key);
+    const n = notesOf(s);
+    assert(n.has('C') && n.has('E') && n.has('Bb'), `3-string C7 ${s.key} lacks R, 3 or b7`);
+  }
+  assertEqual(find('C13', 3), []); // needs R, 3, b7 and 13: four notes
+  const plain = findVoicings({ tuning: STANDARD, capo: 0, frets: 15, chord: parseChord('C') });
+  assertEqual(find('C', null), plain);
+  assertEqual(find('C', undefined), plain);
+});

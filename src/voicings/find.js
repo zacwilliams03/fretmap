@@ -121,8 +121,10 @@ function isFragmentOf(b, a, capo) {
   return b.frets.every((f, s) => (f === null ? a.frets[s] === null || a.frets[s] === capo : a.frets[s] === f));
 }
 
-// Unsorted; see rank.js. Returns [] for no chord.
-export function findVoicings({ tuning, capo, frets, chord }) {
+// Unsorted; see rank.js. Returns [] for no chord. With `strings` (3–6), only shapes sounding
+// exactly that many strings, kept before fragment removal: a fragment always sounds fewer
+// strings than its parent, so within one size nothing is a fragment.
+export function findVoicings({ tuning, capo, frets, chord, strings = null }) {
   if (!chord || capo > frets) return [];
   const cells = mapFretboard({ tuning, capo, frets, chord });
   const drop = droppableLabels(chord);
@@ -155,6 +157,7 @@ export function findVoicings({ tuning, capo, frets, chord }) {
     walk(0);
   }
 
-  const shapes = [...found.values()].filter(Boolean);
+  let shapes = [...found.values()].filter(Boolean);
+  if (strings !== null) shapes = shapes.filter((s) => s.sounding === strings);
   return shapes.filter((b) => !shapes.some((a) => a !== b && isFragmentOf(b, a, capo)));
 }
