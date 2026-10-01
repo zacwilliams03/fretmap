@@ -53,3 +53,16 @@ check('hash: each bad part falls back on its own', () => {
 check('hash: a chord without a key takes its key from the chord', () => {
   assertEqual(hashToState('#c=Em').key, { root: 4, mode: 'minor' });
 });
+
+check('hash: string-count filter', () => {
+  assertEqual(defaultState().strings, null);
+  assertEqual(stateToHash(defaultState()), '#t=40.45.50.55.59.64&capo=0&f=15&l=names&k=0.maj');
+  for (const n of [3, 4, 5, 6]) {
+    const hash = stateToHash({ ...defaultState(), strings: n });
+    assertEqual(hash.endsWith(`&n=${n}`), true, hash);
+    assertEqual(hashToState(hash).strings, n);
+  }
+  for (const bad of ['#n=7', '#n=2', '#n=x', '#n=', '#n=03', '#n=3.0']) {
+    assertEqual(hashToState(bad).strings, null, bad);
+  }
+});

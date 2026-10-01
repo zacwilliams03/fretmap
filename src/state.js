@@ -5,6 +5,7 @@ import { keyForChord } from './theory/degrees.js';
 
 export const FRET_OPTIONS = [12, 15, 19, 22, 24];
 export const MAX_CAPO = 12;
+export const STRING_COUNTS = [3, 4, 5, 6]; // shape sizes the gallery can filter to; null = any
 
 export function defaultState() {
   return {
@@ -15,6 +16,7 @@ export function defaultState() {
     labels: 'names',
     key: { root: 0, mode: 'major' },
     keyPinned: false,
+    strings: null,
   };
 }
 
@@ -40,6 +42,7 @@ export function stateToHash(s) {
   p.set('l', s.labels);
   p.set('k', `${s.key.root}.${s.key.mode === 'minor' ? 'min' : 'maj'}`);
   if (s.keyPinned) p.set('kp', '1');
+  if (s.strings) p.set('n', String(s.strings));
   return `#${p.toString()}`;
 }
 
@@ -67,5 +70,8 @@ export function hashToState(hash) {
   else if (s.chord) s.key = keyForChord(s.chord);
 
   s.keyPinned = p.get('kp') === '1';
+
+  const n = p.get('n');
+  if (STRING_COUNTS.map(String).includes(n)) s.strings = Number(n);
   return s;
 }
