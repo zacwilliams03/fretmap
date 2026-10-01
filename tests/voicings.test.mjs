@@ -1,5 +1,5 @@
 import { check, assert, assertEqual } from './harness.mjs';
-import { findVoicings, fingering, droppableLabels } from '../src/voicings/find.js';
+import { findVoicings, fingering, droppableLabels, isMuddy } from '../src/voicings/find.js';
 import { rankVoicings, easeScore } from '../src/voicings/rank.js';
 import { describeVoicing } from '../src/voicings/describe.js';
 import { parseChord } from '../src/theory/parse.js';
@@ -162,4 +162,18 @@ check('voicings: sus chords keep their 5th; easeScore prefers fuller shapes', ()
   const full = c.find((s) => s.key === keyOf([x, 3, 2, 0, 1, 0]));
   const sparse = c.find((s) => s.key === keyOf([x, 3, x, 0, 1, 0]));
   assert(easeScore(full, 0) < easeScore(sparse, 0), 'full shape should score easier than one with a muted middle');
+});
+
+check('voicings: a close interval low in the bass is muddy', () => {
+  assertEqual(isMuddy([47, 50, 59]), true);   // B2 under D3: minor 3rd below C3
+  assertEqual(isMuddy([59, 50, 47]), true);   // order doesn't matter
+  assertEqual(isMuddy([48, 51, 55]), false);  // C3–Eb3: at the limit, fine
+  assertEqual(isMuddy([51, 52, 59]), true);   // semitone below E3
+  assertEqual(isMuddy([43, 47, 50]), false);  // G2–B2: major 3rds are never muddy
+  assertEqual(isMuddy([40, 40, 47]), false);  // unison
+  const bm = findVoicings({ tuning: STANDARD, capo: 0, frets: 15, chord: parseChord('Bm') });
+  assertEqual(bm.find((s) => s.key === keyOf([x, 2, 0, 4, 0, 2])).muddyBass, true);
+  assertEqual(bm.find((s) => s.key === keyOf([x, 2, 4, 4, 3, 2])).muddyBass, false);
+  const g = findVoicings({ tuning: STANDARD, capo: 0, frets: 15, chord: parseChord('G') });
+  assertEqual(g.find((s) => s.key === keyOf([3, 2, 0, 0, 0, 3])).muddyBass, false);
 });

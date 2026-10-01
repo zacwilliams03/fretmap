@@ -8,6 +8,17 @@ export const MAX_FINGERS = 4;  // plus the thumb on string 6, see fingering()
 export const MIN_SOUNDING = 3;
 const ALTERATIONS = ['b9', '#9', '#11', 'b13'];
 
+// Low interval limits (MIDI): a semitone, whole tone or minor 3rd between the two lowest notes
+// sounds muddy below E3, Eb3 and C3. Major 3rds are left alone, since open G (G2–B2) is idiomatic.
+const LOW_LIMIT = { 1: 52, 2: 51, 3: 48 };
+
+// True when the two lowest pitches form a close interval below its low limit.
+export function isMuddy(pitches) {
+  const [lo, hi] = pitches.slice().sort((a, b) => a - b);
+  const limit = LOW_LIMIT[hi - lo];
+  return limit !== undefined && lo < limit;
+}
+
 // Labels a shape may leave out: a plain 5th when there's a real 3rd (not in power or sus chords),
 // and the 9th/11th under a named 11th or 13th. A 7alt needs only two of its four alterations (see evaluate). Everything
 // else defines the chord and is required.
@@ -95,6 +106,7 @@ function evaluate(frets, cells, chord, drop, bassPc, capo) {
     sounding: sounding.length,
     openStrings: frets.filter((f) => f === capo).length,
     middleMutes,
+    muddyBass: isMuddy(sounding.map((s) => cells[s][frets[s]].midi)),
   };
 }
 
