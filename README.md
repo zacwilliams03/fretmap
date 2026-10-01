@@ -38,8 +38,8 @@ node tests/run.mjs
 ```
 
 Node standard library only. Covers everything in `src/theory/`, `src/fretboard/`,
-`src/tunings.js`, `src/state.js`, and the build's module bundling. The UI is checked by
-hand.
+`src/voicings/`, `src/tunings.js`, `src/state.js`, and the build's module bundling. The UI is
+checked by hand.
 
 ## Playable shapes
 
@@ -76,6 +76,6 @@ carries its interval label, so colour is never the only cue.
 declarations (`export function f`, `export const X`) and named relative imports
 (`import { a } from './x.js'`). The build fails loudly on anything else.
 
-`theory/`, `fretboard/`, `tunings.js` and `state.js` are pure — no DOM — and are what the
-tests cover. `ui/` renders; `main.js` is the only place that touches `location`, `history`
+`theory/`, `fretboard/`, `voicings/`, `tunings.js` and `state.js` are pure — no DOM — and are
+what the tests cover. `ui/` renders; `main.js` is the only place that touches `location`, `history`
 and `localStorage`.
