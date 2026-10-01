@@ -32,6 +32,15 @@ check('voicings: the best-known shape ranks first', () => {
   assertEqual(shapesFor('C').shapes[0].key, keyOf([x, 3, 2, 0, 1, 0]));
   assertEqual(shapesFor('Am').shapes[0].key, keyOf([x, 0, 2, 2, 1, 0]));
   assertEqual(shapesFor('Cmaj7').shapes[0].key, keyOf([x, 3, 2, 0, 0, 0]));
+  const table = {
+    F: [1, 3, 3, 2, 1, 1], D: [x, x, 0, 2, 3, 2], E: [0, 2, 2, 1, 0, 0], Dm: [x, x, 0, 2, 3, 1],
+    A7: [x, 0, 2, 0, 2, 0], G7: [3, 2, 0, 0, 0, 1], 'F#m': [2, 4, 4, 2, 2, 2], D7: [x, x, 0, 2, 1, 2],
+    E7: [0, 2, 0, 1, 0, 0], Em: [0, 2, 2, 0, 0, 0], B7: [x, 2, 1, 2, 0, 2], Gm: [3, 5, 5, 3, 3, 3],
+    Asus2: [x, 0, 2, 2, 0, 0], Am7: [x, 0, 2, 0, 1, 0], Dmaj7: [x, x, 0, 2, 2, 2],
+  };
+  for (const [symbol, frets] of Object.entries(table)) {
+    assertEqual(shapesFor(symbol).shapes[0].key, keyOf(frets), `${symbol}: best-known shape not #1`);
+  }
 });
 
 check('voicings: root in bass first', () => {

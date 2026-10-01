@@ -113,6 +113,8 @@ function evaluate(frets, cells, chord, drop, bassPc, capo) {
 // B is a fragment of A when A is B plus open strings only, with the same bass and the same
 // number of missing tones, and no harder to play. So x3201x goes next to x32010, but the small
 // F xx3211 stays next to the full barre 133211, and the D shape xx0232 next to x50232.
+// muddyBass is deliberately not compared: muting the open string that causes the mud adds a middle mute
+// and loses the open/sounding bonus, so the clean fragment could never outrank its parent.
 function isFragmentOf(b, a, capo) {
   if (a.sounding <= b.sounding || a.bassPc !== b.bassPc || a.missing.length !== b.missing.length) return false;
   if (a.fingers > b.fingers || a.middleMutes > b.middleMutes || (a.thumb && !b.thumb)) return false;
