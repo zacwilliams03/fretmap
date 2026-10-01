@@ -64,10 +64,13 @@ function chordBox(shape, state) {
     const cy = y(rel(f));
     root.append(svg('circle', { cx: x(s), cy, r: 7, fill: `var(--${t.role})` }));
     const text = labels === 'numbers' ? degreeLabel(pitchClass(t.note), key).label : t.label === '1' ? 'R' : t.label;
-    root.append(svg('text', {
-      x: x(s), y: cy + 3, 'text-anchor': 'middle', 'font-size': 8, 'font-weight': 700,
+    const attrs = {
+      x: x(s), y: cy + 3.5, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 700,
       fill: t.role === 'extension' ? '#1c1917' : '#ffffff',
-    }, text));
+    };
+    // Three-character labels (b13, #11, bb7) are squeezed to stay inside the 14px dot.
+    if (text.length >= 3) Object.assign(attrs, { textLength: 12, lengthAdjust: 'spacingAndGlyphs' });
+    root.append(svg('text', attrs, text));
     if (shape.thumb && s === 0) root.append(svg('text', { x: x(s) - 11, y: cy + 3, 'text-anchor': 'middle', 'font-size': 9, fill: 'currentColor' }, 'T'));
   });
   return root;
