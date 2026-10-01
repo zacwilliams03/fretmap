@@ -19,9 +19,9 @@ const favourites = createFavouriteStore(getStorage());
 let state = hashToState(location.hash);
 let selectedShape = null; // highlighted gallery shape; UI-only, never in the URL
 
-// A shape only makes sense for the chord, tuning, capo and frets it was found for.
+// A shape only makes sense for the chord, tuning, capo, frets and string filter it was found for.
 function shapeContext(s) {
-  return [s.chord ? s.chord.symbol : '', s.tuning.join('.'), s.capo, s.frets].join('|');
+  return [s.chord ? s.chord.symbol : '', s.tuning.join('.'), s.capo, s.frets, s.strings].join('|');
 }
 
 function commit(next) {
@@ -40,6 +40,7 @@ const actions = {
   setLabels: (labels) => commit({ ...state, labels }),
   setKey: (key) => commit({ ...state, key }),
   togglePin: () => commit({ ...state, keyPinned: !state.keyPinned }),
+  setStrings: (strings) => commit({ ...state, strings }),
   saveFavourite(name) {
     favourites.save(name, state.tuning);
     render();

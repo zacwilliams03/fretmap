@@ -5,6 +5,7 @@ import { rankVoicings } from '../voicings/rank.js';
 import { describeVoicing } from '../voicings/describe.js';
 import { degreeLabel } from '../theory/degrees.js';
 import { pitchClass } from '../theory/notes.js';
+import { STRING_COUNTS } from '../state.js';
 
 const FIRST = 24;                    // boxes shown before "Show all"
 const ROWS = 4;                      // fret rows per box
@@ -91,17 +92,63 @@ export function mountShapes(el, actions) {
     actions.clearShape();
   });
 
+  // Heading plus the "Strings: Any 3 4 5 6" filter. Shown whenever the gallery is, so a filter
+  // that empties the list can still be switched back.
+  function header(state) {
+    const head = document.createElement('div');
+    head.className = 'shapes-head';
+    const heading = document.createElement('h2');
+    heading.textContent = `Shapes (${shapes.length})`;
+    const label = document.createElement('span');
+    label.className = 'seg-label';
+    label.textContent = 'Strings';
+    const group = document.createElement('div');
+    group.className = 'seg';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', 'Strings');
+    for (const n of [null, ...STRING_COUNTS]) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.strings = n === null ? 'any' : String(n);
+      b.textContent = n === null ? 'Any' : String(n);
+      b.setAttribute('aria-pressed', String(state.strings === n));
+      b.addEventListener('click', () => actions.setStrings(n));
+      group.append(b);
+    }
+    head.append(heading, label, group);
+    return head;
+  }
+
+  // What has keyboard focus inside the gallery, as a selector that finds it again after a rebuild.
+  function focusedSelector() {
+    const active = document.activeElement;
+    if (!active || !el.contains(active)) return null;
+    if (active.dataset.strings) return `[data-strings="${active.dataset.strings}"]`;
+    if (active.dataset.key) return `.shape-box[data-key="${active.dataset.key}"]`;
+    return null;
+  }
+
+  function replaceKeepingFocus(parts) {
+    const selector = focusedSelector();
+    el.replaceChildren(...parts);
+    if (selector) {
+      const again = el.querySelector(selector);
+      if (again) again.focus();
+    }
+  }
+
   // Rebuilds the boxes. Only needed when the list, the labels or the key change; a selection
   // change just flips aria-pressed (see markSelected), which stays fast with ~1000 boxes.
   function draw(state) {
-    const heading = document.createElement('h2');
-    heading.textContent = `Shapes (${shapes.length})`;
+    const head = header(state);
     if (!shapes.length) {
       const empty = document.createElement('p');
       empty.className = 'empty';
-      empty.textContent = `No playable shapes within frets ${state.capo}–${state.frets}. Try more frets (⚙) or a simpler chord.`;
+      empty.textContent = state.strings
+        ? `No ${state.strings}-string shapes for ${state.chord.symbol} within frets ${state.capo}–${state.frets}. Try Any.`
+        : `No playable shapes within frets ${state.capo}–${state.frets}. Try more frets (⚙) or a simpler chord.`;
       grid = null;
-      el.replaceChildren(heading, empty);
+      replaceKeepingFocus([head, empty]);
       return;
     }
 
@@ -125,7 +172,7 @@ export function mountShapes(el, actions) {
       grid.append(box);
     });
 
-    const parts = [heading, grid];
+    const parts = [head, grid];
     if (!expanded && shapes.length > FIRST) {
       const more = document.createElement('button');
       more.type = 'button';
@@ -140,13 +187,8 @@ export function mountShapes(el, actions) {
       parts.push(more);
     }
 
-    // Keep keyboard focus on the same shape across a rebuild (e.g. switching Names/Numbers).
-    const focused = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.key : undefined;
-    el.replaceChildren(...parts);
-    if (focused) {
-      const again = grid.querySelector(`[data-key="${focused}"]`);
-      if (again) again.focus();
-    }
+    // Keep keyboard focus on the same shape or filter button across a rebuild.
+    replaceKeepingFocus(parts);
   }
 
   function markSelected(selected) {
@@ -168,7 +210,7 @@ export function mountShapes(el, actions) {
     }
     el.hidden = false;
 
-    const next = [state.chord.symbol, state.tuning.join('.'), state.capo, state.frets].join('|');
+    const next = [state.chord.symbol, state.tuning.join('.'), state.capo, state.frets, state.strings].join('|');
     if (next !== context) {
       context = next;
       shapes = rankVoicings(findVoicings(state), state.capo);
